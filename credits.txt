@@ -1,0 +1,10 @@
+For the cpk archive files format and encryption of the packets
+https://github.com/mosamadeeb/CriPakTools/blob/asbr/LibCPK/CPK.cs
+
+
+
+For the CRILAYLA decompression logic
+https://github.com/kamikat/cpktools/blob/master/cpk/crilayla.py
+
+
+All the others credited in any of those two github repositories are included.
