@@ -20,7 +20,7 @@ class PAC():
         
         
     def ReadPACHeader(self, f):
-        self.Magic = f.read(4) # b"ARC "
+        self.Magic = f.read(4) # b"ARC\x00"
         self.unk0 = read_ushort(f, ENDIANNESS)
         self.FileNum = read_ushort(f, ENDIANNESS)
         self.FileNum_1 = read_uint64(f, ENDIANNESS)

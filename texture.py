@@ -16,6 +16,8 @@ class Texture():
         
         self.TotalFileSize = 0
         
+        self.TextureNameOffset = 0
+        
         self.TextureName = ""
         
         self.TextureData = b""
@@ -24,7 +26,7 @@ class Texture():
         
         
     def ParseTexture(self, f):
-        self.Magic = f.read(4) # b"btx "
+        self.Magic = f.read(4) # b"btx\x00"
         
         f.seek(4, 1) # 4 Unknown bytes
         
@@ -45,7 +47,7 @@ class Texture():
         
         self.TotalFileSize = read_uint(f, ENDIANNESS)
         
-        f.seek(4, 1) # Unknown Size ??
+        self.TextureNameOffset = read_uint(f, ENDIANNESS)
         
         f.seek(8, 1) # Unknown zeroes
         

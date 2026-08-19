@@ -17,12 +17,18 @@ import crilayla
 
 import texture
 
-Dictionary = {"file_path": "", "folder_path": "", "FilesToExtract": [], "extension": "", "ArchiveName": "", "ArchiveSize": 0}
+Dictionary = {"file_path": "", "folder_path": "", "FilesToExtract": [], "extension": "", "ArchiveName": "", "ArchiveSize": 0, "ArchivePath": None}
 
 from pathlib import Path
+import sys
 
 def resource_path(relative_path):
-    return str(Path(__file__).resolve().parent / relative_path)
+    if getattr(sys, "frozen", False):
+        base_path = Path(sys._MEIPASS)
+    else:
+        base_path = Path(__file__).parent
+
+    return str(base_path / relative_path)
     
 # Wrapper around parser
 def parse_cpk(source):
@@ -101,15 +107,16 @@ def format_size(size):
         size /= 1024
 
 tree_history = []
+tree_forward_history = []
 
 # Save tree history
-def save_history():
+def save_history(history_list):
     current_items = []
 
     for item in tree.get_children():
         current_items.append(tree.item(item)["values"])
 
-    tree_history.append({
+    history_list.append({
         "tree": current_items,
         "extension": Dictionary["extension"],
         "FilesToExtract": Dictionary["FilesToExtract"],
@@ -117,7 +124,9 @@ def save_history():
         "archive_name": Dictionary["ArchiveName"],
         "archive_size": Dictionary["ArchiveSize"],
         "archive_filecount": len( Dictionary["FilesToExtract"] ),
-        "showing": showing_label.cget("text")
+        "showing": showing_label.cget("text"),
+        
+        "archive_path": Dictionary["ArchivePath"]
     })
     
     
@@ -217,10 +226,10 @@ def open_file():
     
     
     if Dictionary["extension"] == ".cpk":
-        save_history()
+        save_history(tree_history)
         run_in_background(parse_cpk, file_path)
     else:
-        save_history()
+        save_history(tree_history)
         run_in_background(parse_pac, file_path)
         
     
@@ -291,6 +300,7 @@ Icons = {
     "extract_cpk": ctk.CTkImage(Image.open(resource_path("icons/extract_cpk.png")), size=(40,40)),
     "extract_pac": ctk.CTkImage(Image.open(resource_path("icons/extract_pac.png")), size=(40,40)),
     "go_back": ctk.CTkImage(Image.open(resource_path("icons/go_back.png")), size=(20,20)),
+    "go_forward": ctk.CTkImage(Image.open(resource_path("icons/go_forward.png")), size=(20,20)),
 }
 
 # Open Button
@@ -574,12 +584,12 @@ def get_selected_values(tree):
     
     
 def fillout(event):
-    # Delete whatever is in the Entry box
-    search_entry.delete(0, "end")
-    
     selected_values = get_selected_values(tree)
     
     if selected_values:
+        # Delete whatever is in the Entry box
+        search_entry.delete(0, "end")
+    
         selected_value = selected_values[0]
     
         # Add clicked Treeview item to the Entry box
@@ -596,16 +606,16 @@ def on_double_click(event):
     filename = values[1] # FileName
     filetype = values[-1] # ContainsFilesOfType
     
-    if filetype == "tex":
+    if filetype == "tex" and not ".pac" in filename:
         view_texture()
     else:
-        save_history()
+        save_history(tree_history)
         run_in_background(open_nested_archive_for_double_click, filename)
 
 
 
 def open_nested_archive_for_double_click(filename):
-    archive_path = Dictionary["ArchivePath"]
+    archive_path = Dictionary["ArchivePath"] # Main one that has files inside and is open in the tree(cpk or pac)
     
     if isinstance(archive_path, str): # Filepath
         source = open(archive_path, "rb")
@@ -708,6 +718,7 @@ showing_label.place(
 
 def go_back():
     if tree_history:
+        save_history(tree_forward_history)
         previous_item = tree_history.pop()
         
         
@@ -722,7 +733,7 @@ def go_back():
         Dictionary["extension"] = previous_item["extension"]
         Dictionary["ArchiveName"] = previous_item["archive_name"]
         Dictionary["ArchiveSize"] = previous_item["archive_size"]
-        
+        Dictionary["ArchivePath"] = previous_item["archive_path"]
         
         update_tree()
             
@@ -753,9 +764,70 @@ def go_back():
         )
         
 
+
+def go_forward():
+    if tree_forward_history:
+        save_history(tree_history)
+        
+        previous_item = tree_forward_history.pop()
+        
+        
+        
+        
+        # Clear current view
+        for item in tree.get_children():
+            tree.delete(item)
+
+        # Restore previous view
+        Dictionary["FilesToExtract"] = previous_item["FilesToExtract"]
+        Dictionary["extension"] = previous_item["extension"]
+        Dictionary["ArchiveName"] = previous_item["archive_name"]
+        Dictionary["ArchiveSize"] = previous_item["archive_size"]
+        Dictionary["ArchivePath"] = previous_item["archive_path"]
+        
+        update_tree()
+            
+            
+        # Restore labels
+        update_archive_name_label(Dictionary["ArchiveName"])
+        update_archive_size_label(Dictionary["ArchiveSize"])
+        update_archive_filecount_label()
+        update_showing_label()
+
+        
+    else:
+        # Updating archive name and size labels
+        archive_name_label.configure(
+            text=f"Archive Name: "
+        )
+        
+        archive_size_label.configure(
+            text=f"Archive Size: "
+        )
+        
+        archive_filecount_label.configure(
+            text=f"Archive FileCount: "
+        )
+        
+        showing_label.configure(
+            text=f"Showing 0 out of 0 files"
+        )
+        
+
+
 back_button = ctk.CTkButton(app, text="Go Back", image=Icons["go_back"], command=go_back)
+forward_button = ctk.CTkButton(app, text="Go Forward", image=Icons["go_forward"], command=go_forward)
+
 
 back_button.place(
+    relx=0.78,
+    rely=1.0,
+    anchor="se",
+    x=-15,
+    y=-10
+)
+
+forward_button.place(
     relx=0.88,
     rely=1.0,
     anchor="se",
