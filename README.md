@@ -1,6 +1,7 @@
 # CALL-to-EXIST-Tool
 Game archive file explorer for Tokyo Ghoul: re [CALL to EXIST]
 
+[NexusMods Page](https://www.nexusmods.com/tokyoghoulrecalltoexist/mods/1)
 
 # Compiling
 I used Nuitka to compile the program, you can compile the gui.py in onefile mode using this CMD command and it will produce a single independent .exe file:
